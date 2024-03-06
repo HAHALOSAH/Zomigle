@@ -21,7 +21,7 @@ struct ContentView: View {
         VStack {
             Text("Welcome to Zomigle!")
                 .font(.largeTitle)
-            Text("release 0.1.0 beta 1")
+            Text("release 0.1.0 beta 2")
             Spacer()
             if status == .waiting {
                 Text("Loading...")
@@ -99,7 +99,8 @@ struct ContentView: View {
     func install() {
         do {
             try FileManager.default.moveItem(atPath: "/var/mobile/Library/Preferences/com.apple.NanoRegistry.plist", toPath: "/var/mobile/Library/Preferences/com.apple.NanoRegistry.plist.backup")
-            let currentContents = NSMutableDictionary(contentsOf: URL(fileURLWithPath: "/var/mobile/Library/Preferences/com.apple.NanoRegistry.plist.backup"))
+            try FileManager.default.moveItem(atPath: "/var/mobile/Library/Preferences/com.apple.pairedsync.plist", toPath: "/var/mobile/Library/Preferences/com.apple.pairedsync.plist.backup")
+            var currentContents = NSMutableDictionary(contentsOf: URL(fileURLWithPath: "/var/mobile/Library/Preferences/com.apple.NanoRegistry.plist.backup"))
             if currentContents == nil {
                 status = .failed
                 return
@@ -111,6 +112,12 @@ struct ContentView: View {
             currentContents!.setObject(1, forKey: "minPairingCompatibilityVersionWithChipID" as NSCopying)
             
             try currentContents?.write(to: URL(fileURLWithPath: "/var/mobile/Library/Preferences/com.apple.NanoRegistry.plist"))
+            currentContents = NSMutableDictionary(contentsOf: URL(fileURLWithPath: "/var/mobile/Library/Preferences/com.apple.NanoRegistry.plist.backup"))
+            if currentContents == nil {
+                status = .failed
+                return
+            }
+            currentContents!.setObject(99, forKey: "activityTimeout" as NSCopying)
             check()
         } catch {
             status = .failed
@@ -123,10 +130,14 @@ struct ContentView: View {
             return
         }
         do {
-            if FileManager.default.isWritableFile(atPath: "/var/mobile/Library/Preferences/com.apple.NanoRegistry.plist") {
+            if FileManager.default.isWritableFile(atPath: "/var/mobile/Library/Preferences/com.apple.NanoRegistry.plist") && FileManager.default.isWritableFile(atPath: "/var/mobile/Library/Preferences/com.apple.NanoRegistry.plist.backup") {
                 try FileManager.default.removeItem(atPath: "/var/mobile/Library/Preferences/com.apple.NanoRegistry.plist")
+                try FileManager.default.moveItem(atPath: "/var/mobile/Library/Preferences/com.apple.NanoRegistry.plist.backup", toPath: "/var/mobile/Library/Preferences/com.apple.NanoRegistry.plist")
             }
-            try FileManager.default.moveItem(atPath: "/var/mobile/Library/Preferences/com.apple.NanoRegistry.plist.backup", toPath: "/var/mobile/Library/Preferences/com.apple.NanoRegistry.plist")
+            if FileManager.default.isWritableFile(atPath: "/var/mobile/Library/Preferences/com.apple.pairedsync.plist") && FileManager.default.isWritableFile(atPath: "/var/mobile/Library/Preferences/com.apple.pairedsync.plist.backup") {
+                try FileManager.default.removeItem(atPath: "/var/mobile/Library/Preferences/com.apple.pairedsync.plist")
+                try FileManager.default.moveItem(atPath: "/var/mobile/Library/Preferences/com.apple.pairedsync.plist.backup", toPath: "/var/mobile/Library/Preferences/com.apple.pairedsync.plist")
+            }
             check()
         } catch {
             status = .failed
